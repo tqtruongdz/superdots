@@ -1,0 +1,19 @@
+# Core dependencies
+click>=8.0.0
+GitPython>=3.1.0
+pyyaml>=6.0
+toml>=0.10.0
+pathlib2>=2.3.0
+colorama>=0.4.0
+rich>=13.0.0
+
+# Development dependencies
+pytest>=7.0.0
+pytest-cov>=4.0.0
+black>=22.0.0
+flake8>=5.0.0
+mypy>=1.0.0
+
+# Optional dependencies for advanced features
+watchdog>=2.1.0
+cryptography>=3.4.0

@@ -1,0 +1,328 @@
+" SuperDots Vim Configuration Template
+" This file is managed by SuperDots - changes will be overwritten during sync
+" Platform: {{PLATFORM}}
+" Generated for: {{USER}}@{{HOSTNAME}}
+
+" ============================================================================
+" Basic Settings
+" ============================================================================
+
+" Disable Vi compatibility
+set nocompatible
+
+" Enable syntax highlighting
+syntax enable
+
+" Set encoding
+set encoding=utf-8
+set fileencoding=utf-8
+
+" Line numbers
+set number
+set relativenumber
+
+" Show current position
+set ruler
+
+" Highlight current line
+set cursorline
+
+" Show matching brackets
+set showmatch
+
+" Enable mouse support
+set mouse=a
+
+" ============================================================================
+" Indentation and Formatting
+" ============================================================================
+
+" Use spaces instead of tabs
+set expandtab
+
+" Tab width
+set tabstop=4
+set softtabstop=4
+set shiftwidth=4
+
+" Auto-indentation
+set autoindent
+set smartindent
+
+" Wrap lines
+set wrap
+set textwidth=80
+set colorcolumn=80
+
+" ============================================================================
+" Search Settings
+" ============================================================================
+
+" Incremental search
+set incsearch
+
+" Highlight search results
+set hlsearch
+
+" Case insensitive search
+set ignorecase
+set smartcase
+
+" ============================================================================
+" File Handling
+" ============================================================================
+
+" Enable file type detection
+filetype on
+filetype plugin on
+filetype indent on
+
+" Auto-reload files changed outside vim
+set autoread
+
+" Backup and swap files
+set backup
+set backupdir={{HOME}}/.vim/backup//
+set directory={{HOME}}/.vim/swap//
+set undodir={{HOME}}/.vim/undo//
+
+" Create backup directories if they don't exist
+if !isdirectory(expand("{{HOME}}/.vim/backup"))
+    call mkdir(expand("{{HOME}}/.vim/backup"), "p")
+endif
+if !isdirectory(expand("{{HOME}}/.vim/swap"))
+    call mkdir(expand("{{HOME}}/.vim/swap"), "p")
+endif
+if !isdirectory(expand("{{HOME}}/.vim/undo"))
+    call mkdir(expand("{{HOME}}/.vim/undo"), "p")
+endif
+
+" Enable persistent undo
+set undofile
+
+" ============================================================================
+" Interface
+" ============================================================================
+
+" Show command in status line
+set showcmd
+
+" Status line
+set laststatus=2
+set statusline=%F%m%r%h%w\ [%Y]\ [%{&ff}]\ %p%%\ %l,%c
+
+" Color scheme (adjust based on platform)
+{% if PLATFORM == "darwin" %}
+colorscheme desert
+{% elif PLATFORM == "linux" %}
+colorscheme default
+{% elif PLATFORM == "windows" %}
+colorscheme blue
+{% else %}
+colorscheme default
+{% endif %}
+
+" GUI options (for GVim/MacVim)
+if has('gui_running')
+    set guioptions-=T  " Remove toolbar
+    set guioptions-=r  " Remove right scrollbar
+    set guioptions-=L  " Remove left scrollbar
+    set guifont=Monaco:h12
+endif
+
+" ============================================================================
+" Key Mappings
+" ============================================================================
+
+" Set leader key
+let mapleader = ","
+
+" Quick save
+nnoremap <Leader>w :w<CR>
+
+" Quick quit
+nnoremap <Leader>q :q<CR>
+
+" Clear search highlighting
+nnoremap <Leader>/ :noh<CR>
+
+" Navigate between splits
+nnoremap <C-h> <C-w>h
+nnoremap <C-j> <C-w>j
+nnoremap <C-k> <C-w>k
+nnoremap <C-l> <C-w>l
+
+" Tab navigation
+nnoremap <Leader>t :tabnew<CR>
+nnoremap <Leader>n :tabnext<CR>
+nnoremap <Leader>p :tabprev<CR>
+
+" Buffer navigation
+nnoremap <Leader>b :buffer<Space>
+nnoremap <Leader>bd :bdelete<CR>
+
+" Toggle paste mode
+set pastetoggle=<F2>
+
+" ============================================================================
+" Plugin Management (if available)
+" ============================================================================
+
+" Check if vim-plug is installed
+if empty(glob('{{HOME}}/.vim/autoload/plug.vim'))
+  silent !curl -fLo {{HOME}}/.vim/autoload/plug.vim --create-dirs
+    \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+endif
+
+" Plugin list
+call plug#begin('{{HOME}}/.vim/plugged')
+
+" Essential plugins
+Plug 'tpope/vim-sensible'        " Sensible defaults
+Plug 'tpope/vim-surround'        " Surround text objects
+Plug 'tpope/vim-commentary'      " Comment/uncomment
+Plug 'tpope/vim-fugitive'        " Git integration
+
+" File navigation
+Plug 'preservim/nerdtree'        " File tree
+Plug 'ctrlpvim/ctrlp.vim'        " Fuzzy file finder
+
+" Syntax and language support
+Plug 'sheerun/vim-polyglot'      " Language pack
+Plug 'dense-analysis/ale'        " Linting and fixing
+
+" Appearance
+Plug 'vim-airline/vim-airline'          " Status line
+Plug 'vim-airline/vim-airline-themes'   " Status line themes
+
+" Platform-specific plugins
+{% if PLATFORM == "linux" %}
+Plug 'Valloric/YouCompleteMe'     " Auto-completion
+{% elif PLATFORM == "darwin" %}
+Plug 'neoclide/coc.nvim', {'branch': 'release'}  " LSP support
+{% endif %}
+
+call plug#end()
+
+" ============================================================================
+" Plugin Configuration
+" ============================================================================
+
+" NERDTree
+nnoremap <Leader>e :NERDTreeToggle<CR>
+let NERDTreeShowHidden=1
+let NERDTreeIgnore=['\.pyc$', '\.pyo$', '\.rbc$', '\.rbo$', '\.class$', '\.o$', '\~$']
+
+" CtrlP
+let g:ctrlp_working_path_mode = 'ra'
+let g:ctrlp_custom_ignore = '\v[\/]\.(git|hg|svn)$'
+
+" ALE (Linting)
+let g:ale_sign_error = '✗'
+let g:ale_sign_warning = '⚠'
+let g:ale_echo_msg_format = '[%linter%] %s [%severity%]'
+
+" Airline
+let g:airline_theme='dark'
+let g:airline#extensions#tabline#enabled = 1
+
+" ============================================================================
+" Auto Commands
+" ============================================================================
+
+augroup SuperDotsVimrc
+    autocmd!
+
+    " Remove trailing whitespace on save
+    autocmd BufWritePre * :%s/\s\+$//e
+
+    " Return to last edit position when opening files
+    autocmd BufReadPost *
+        \ if line("'\"") > 0 && line("'\"") <= line("$") |
+        \   exe "normal! g`\"" |
+        \ endif
+
+    " Auto-resize splits when window is resized
+    autocmd VimResized * wincmd =
+
+    " Platform-specific auto commands
+    {% if PLATFORM == "linux" %}
+    " Linux-specific settings
+    autocmd FileType python setlocal expandtab shiftwidth=4 softtabstop=4
+    {% elif PLATFORM == "darwin" %}
+    " macOS-specific settings
+    autocmd FileType javascript setlocal expandtab shiftwidth=2 softtabstop=2
+    {% elif PLATFORM == "windows" %}
+    " Windows-specific settings
+    autocmd FileType cs setlocal expandtab shiftwidth=4 softtabstop=4
+    {% endif %}
+
+augroup END
+
+" ============================================================================
+" Custom Functions
+" ============================================================================
+
+" Toggle between absolute and relative line numbers
+function! NumberToggle()
+    if(&relativenumber == 1)
+        set norelativenumber
+        set number
+    else
+        set relativenumber
+    endif
+endfunc
+
+nnoremap <Leader>r :call NumberToggle()<CR>
+
+" Strip trailing whitespace
+function! StripWhitespace()
+    let save_cursor = getpos(".")
+    let old_query = getreg('/')
+    :%s/\s\+$//e
+    call setpos('.', save_cursor)
+    call setreg('/', old_query)
+endfunction
+
+nnoremap <Leader>sw :call StripWhitespace()<CR>
+
+" ============================================================================
+" Local Overrides
+" ============================================================================
+
+" Load local vimrc if it exists
+if filereadable(expand("{{HOME}}/.vimrc.local"))
+    source {{HOME}}/.vimrc.local
+endif
+
+" Load platform-specific overrides
+{% if PLATFORM == "linux" %}
+if filereadable(expand("{{HOME}}/.vimrc.linux"))
+    source {{HOME}}/.vimrc.linux
+endif
+{% elif PLATFORM == "darwin" %}
+if filereadable(expand("{{HOME}}/.vimrc.darwin"))
+    source {{HOME}}/.vimrc.darwin
+endif
+{% elif PLATFORM == "windows" %}
+if filereadable(expand("{{HOME}}/.vimrc.windows"))
+    source {{HOME}}/.vimrc.windows
+endif
+{% endif %}
+
+" Load project-specific vimrc
+if filereadable(".vimrc")
+    source .vimrc
+endif
+
+" ============================================================================
+" Final Setup
+" ============================================================================
+
+" Install plugins on first run
+if empty(glob('{{HOME}}/.vim/plugged'))
+    PlugInstall --sync
+endif
+
+" SuperDots integration message
+echom "SuperDots Vim configuration loaded for {{PLATFORM}}"

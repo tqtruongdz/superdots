@@ -1,0 +1,288 @@
+# SuperDots Bash Configuration Template
+# This file is managed by SuperDots - changes will be overwritten during sync
+# Platform: {{PLATFORM}}
+# Generated for: {{USER}}@{{HOSTNAME}}
+
+# ============================================================================
+# Environment Variables
+# ============================================================================
+
+# Set default editor
+export EDITOR="{{EDITOR}}"
+export VISUAL="$EDITOR"
+
+# History settings
+export HISTSIZE=10000
+export HISTFILESIZE=20000
+export HISTCONTROL=ignoreboth:erasedups
+export HISTIGNORE="ls:cd:cd -:pwd:exit:date:* --help"
+
+# Path configuration
+export PATH="{{HOME}}/.local/bin:{{HOME}}/bin:$PATH"
+
+# Platform-specific settings
+{% if PLATFORM == "darwin" %}
+# macOS specific settings
+export HOMEBREW_PREFIX="/opt/homebrew"
+export PATH="$HOMEBREW_PREFIX/bin:$HOMEBREW_PREFIX/sbin:$PATH"
+export MANPATH="$HOMEBREW_PREFIX/share/man:$MANPATH"
+export INFOPATH="$HOMEBREW_PREFIX/share/info:$INFOPATH"
+
+# macOS aliases
+alias ls='ls -G'
+alias ll='ls -alG'
+{% elif PLATFORM == "linux" %}
+# Linux specific settings
+export XDG_CONFIG_HOME="{{CONFIG_DIR}}"
+export XDG_DATA_HOME="{{HOME}}/.local/share"
+export XDG_CACHE_HOME="{{HOME}}/.cache"
+
+# Linux aliases
+alias ls='ls --color=auto'
+alias ll='ls -alh --color=auto'
+alias grep='grep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias egrep='egrep --color=auto'
+{% elif PLATFORM == "windows" %}
+# Windows specific settings (WSL/Git Bash)
+export WINDOWS_HOME="/mnt/c/Users/{{USER}}"
+
+# Windows aliases
+alias ls='ls --color=auto'
+alias ll='ls -alh --color=auto'
+alias explorer='explorer.exe'
+alias code='code.exe'
+{% endif %}
+
+# ============================================================================
+# Shell Options
+# ============================================================================
+
+# Enable extended globbing
+shopt -s extglob
+
+# Case-insensitive globbing (used for pathname expansion)
+shopt -s nocaseglob
+
+# Autocorrect typos in path names when using `cd`
+shopt -s cdspell
+
+# Enable history appending instead of overwriting
+shopt -s histappend
+
+# Check the window size after each command and update LINES and COLUMNS
+shopt -s checkwinsize
+
+# ============================================================================
+# Aliases
+# ============================================================================
+
+# Navigation
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias ~='cd ~'
+alias -- -='cd -'
+
+# File operations
+alias cp='cp -iv'
+alias mv='mv -iv'
+alias rm='rm -iv'
+alias mkdir='mkdir -pv'
+
+# Directory listing
+alias la='ls -A'
+alias l='ls -CF'
+alias dir='ls -la'
+
+# System info
+alias df='df -h'
+alias du='du -ch'
+alias free='free -h'
+alias ps='ps aux'
+
+# Network
+alias ping='ping -c 5'
+alias wget='wget -c'
+
+# Git shortcuts (if git is available)
+if command -v git &> /dev/null; then
+    alias g='git'
+    alias gs='git status'
+    alias ga='git add'
+    alias gc='git commit'
+    alias gp='git push'
+    alias gl='git pull'
+    alias gd='git diff'
+    alias gb='git branch'
+    alias gco='git checkout'
+    alias glog='git log --oneline --graph --decorate'
+fi
+
+# SuperDots shortcuts
+alias dots='superdots'
+alias dots-sync='superdots sync'
+alias dots-status='superdots status'
+alias dots-list='superdots list'
+
+# ============================================================================
+# Functions
+# ============================================================================
+
+# Create and change to directory
+mkcd() {
+    mkdir -p "$1" && cd "$1"
+}
+
+# Extract various archive formats
+extract() {
+    if [ -f "$1" ]; then
+        case "$1" in
+            *.tar.bz2)   tar xjf "$1"     ;;
+            *.tar.gz)    tar xzf "$1"     ;;
+            *.bz2)       bunzip2 "$1"     ;;
+            *.rar)       unrar x "$1"     ;;
+            *.gz)        gunzip "$1"      ;;
+            *.tar)       tar xf "$1"      ;;
+            *.tbz2)      tar xjf "$1"     ;;
+            *.tgz)       tar xzf "$1"     ;;
+            *.zip)       unzip "$1"       ;;
+            *.Z)         uncompress "$1"  ;;
+            *.7z)        7z x "$1"        ;;
+            *)           echo "'$1' cannot be extracted via extract()" ;;
+        esac
+    else
+        echo "'$1' is not a valid file"
+    fi
+}
+
+# Find files and directories
+ff() {
+    find . -type f -name "*$1*" 2>/dev/null
+}
+
+fd() {
+    find . -type d -name "*$1*" 2>/dev/null
+}
+
+# Quick grep
+qgrep() {
+    grep -r --include="*.${2:-*}" "$1" .
+}
+
+# ============================================================================
+# Prompt Configuration
+# ============================================================================
+
+# Colors for prompt
+RED='\[\033[01;31m\]'
+GREEN='\[\033[01;32m\]'
+YELLOW='\[\033[01;33m\]'
+BLUE='\[\033[01;34m\]'
+PURPLE='\[\033[01;35m\]'
+CYAN='\[\033[01;36m\]'
+WHITE='\[\033[01;37m\]'
+RESET='\[\033[00m\]'
+
+# Git branch in prompt (if git is available)
+git_branch() {
+    if command -v git &> /dev/null && git rev-parse --git-dir > /dev/null 2>&1; then
+        local branch=$(git branch 2>/dev/null | grep '^*' | colrm 1 2)
+        if [ -n "$branch" ]; then
+            echo " ($branch)"
+        fi
+    fi
+}
+
+# Custom prompt
+if [ "$USER" = "root" ]; then
+    PS1="${RED}[\u@\h ${CYAN}\w${RED}]${YELLOW}\$(git_branch)${RED} # ${RESET}"
+else
+    PS1="${GREEN}[\u@\h ${CYAN}\w${GREEN}]${YELLOW}\$(git_branch)${GREEN} $ ${RESET}"
+fi
+
+# ============================================================================
+# Additional Configuration
+# ============================================================================
+
+# Load platform-specific additional config
+{% if PLATFORM == "darwin" %}
+# macOS: Load brew bash completion if available
+if [ -f "$HOMEBREW_PREFIX/etc/bash_completion" ]; then
+    source "$HOMEBREW_PREFIX/etc/bash_completion"
+fi
+{% elif PLATFORM == "linux" %}
+# Linux: Load bash completion if available
+if [ -f /etc/bash_completion ]; then
+    source /etc/bash_completion
+elif [ -f /usr/share/bash-completion/bash_completion ]; then
+    source /usr/share/bash-completion/bash_completion
+fi
+{% endif %}
+
+# Load local customizations if they exist
+if [ -f "{{HOME}}/.bashrc.local" ]; then
+    source "{{HOME}}/.bashrc.local"
+fi
+
+# Load SuperDots shell integration
+if [ -f "{{CONFIG_DIR}}/superdots/shell_integration.sh" ]; then
+    source "{{CONFIG_DIR}}/superdots/shell_integration.sh"
+fi
+
+# ============================================================================
+# Development Environment
+# ============================================================================
+
+# Node.js (if nvm is installed)
+if [ -d "{{HOME}}/.nvm" ]; then
+    export NVM_DIR="{{HOME}}/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+    [ -s "$NVM_DIR/bash_completion" ] && source "$NVM_DIR/bash_completion"
+fi
+
+# Python (if pyenv is installed)
+if command -v pyenv &> /dev/null; then
+    export PYENV_ROOT="{{HOME}}/.pyenv"
+    export PATH="$PYENV_ROOT/bin:$PATH"
+    eval "$(pyenv init -)"
+fi
+
+# Ruby (if rbenv is installed)
+if command -v rbenv &> /dev/null; then
+    export RBENV_ROOT="{{HOME}}/.rbenv"
+    export PATH="$RBENV_ROOT/bin:$PATH"
+    eval "$(rbenv init -)"
+fi
+
+# Rust (if cargo is installed)
+if [ -d "{{HOME}}/.cargo" ]; then
+    export PATH="{{HOME}}/.cargo/bin:$PATH"
+fi
+
+# Go (if go is installed)
+if command -v go &> /dev/null; then
+    export GOPATH="{{HOME}}/go"
+    export PATH="$GOPATH/bin:$PATH"
+fi
+
+# ============================================================================
+# Welcome Message
+# ============================================================================
+
+# Display system info on login (only for interactive shells)
+if [[ $- == *i* ]] && [ -z "$SUPERDOTS_WELCOME_SHOWN" ]; then
+    echo "Welcome to SuperDots managed shell!"
+    echo "Platform: {{PLATFORM}} | User: {{USER}} | Host: {{HOSTNAME}}"
+    echo "Config managed by SuperDots - Last updated: $(date)"
+    echo ""
+
+    # Show SuperDots status if available
+    if command -v superdots &> /dev/null; then
+        echo "SuperDots status:"
+        superdots status --brief 2>/dev/null || echo "  Repository status unknown"
+    fi
+    echo ""
+
+    export SUPERDOTS_WELCOME_SHOWN=1
+fi

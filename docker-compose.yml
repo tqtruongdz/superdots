@@ -1,0 +1,116 @@
+# SuperDots Docker Compose Configuration
+version: '3.8'
+
+services:
+  superdots:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: superdots:latest
+    container_name: superdots
+    volumes:
+      # Mount host home directory for dotfiles access
+      - ${HOME}:/host-home:ro
+      # Mount SuperDots repository directory
+      - ${SUPERDOTS_REPO:-~/.superdots}:/home/superdots/.superdots
+      # Mount SSH keys for Git operations
+      - ${HOME}/.ssh:/home/superdots/.ssh:ro
+      # Mount Git configuration
+      - ${HOME}/.gitconfig:/home/superdots/.gitconfig:ro
+    environment:
+      - SUPERDOTS_REPO_PATH=/home/superdots/.superdots
+      - GIT_AUTHOR_NAME=${GIT_AUTHOR_NAME:-SuperDots User}
+      - GIT_AUTHOR_EMAIL=${GIT_AUTHOR_EMAIL:-user@example.com}
+      - SUPERDOTS_LOG_LEVEL=${SUPERDOTS_LOG_LEVEL:-INFO}
+    networks:
+      - superdots-network
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
+    command: ["bash"]
+
+  # Development service with additional tools
+  superdots-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    image: superdots:dev
+    container_name: superdots-dev
+    volumes:
+      - .:/app
+      - ${HOME}/.ssh:/home/superdots/.ssh:ro
+      - ${HOME}/.gitconfig:/home/superdots/.gitconfig:ro
+      - superdots-cache:/home/superdots/.cache
+    environment:
+      - PYTHONPATH=/app/src
+      - SUPERDOTS_LOG_LEVEL=DEBUG
+      - PYTEST_CURRENT_TEST=true
+    networks:
+      - superdots-network
+    ports:
+      - "8000:8000"  # For potential web interface
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
+    command: ["bash"]
+
+  # Test runner service
+  superdots-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    image: superdots:test
+    container_name: superdots-test
+    volumes:
+      - .:/app
+      - superdots-test-cache:/home/superdots/.cache
+    environment:
+      - PYTHONPATH=/app/src
+      - PYTEST_CURRENT_TEST=true
+    networks:
+      - superdots-network
+    command: ["pytest", "tests/", "-v", "--cov=superdots"]
+
+  # Documentation service
+  docs:
+    image: python:3.11-slim
+    container_name: superdots-docs
+    volumes:
+      - ./docs:/docs
+      - .:/app:ro
+    working_dir: /docs
+    environment:
+      - PYTHONPATH=/app/src
+    networks:
+      - superdots-network
+    ports:
+      - "8080:8080"
+    command: >
+      bash -c "
+        pip install mkdocs mkdocs-material mkdocs-mermaid2-plugin &&
+        mkdocs serve -a 0.0.0.0:8080
+      "
+
+networks:
+  superdots-network:
+    driver: bridge
+    name: superdots-network
+
+volumes:
+  superdots-cache:
+    driver: local
+    name: superdots-cache
+  superdots-test-cache:
+    driver: local
+    name: superdots-test-cache
+
+# Override configurations for different environments
+# Usage examples:
+# docker-compose up superdots                    # Run main service
+# docker-compose up superdots-dev                # Run development environment
+# docker-compose up superdots-test               # Run tests
+# docker-compose up docs                         # Run documentation server
+# docker-compose -f docker-compose.yml -f docker-compose.override.yml up
