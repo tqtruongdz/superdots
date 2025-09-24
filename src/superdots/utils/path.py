@@ -1,6 +1,9 @@
 from pathlib import Path
+from typing import Optional
 
-def normalize_path(path: Path, home: Path, expanduser: bool=True) -> Path:
+def normalize_path(path: Path, home: Optional[Path] = None, expanduser: bool=True) -> Path:
+    if not home:
+        home = Path.home()
     if path.is_absolute():  # Bắt đầu bằng '/'
         try:
             # Chuyển sang đường dẫn tương đối với home
@@ -8,8 +11,7 @@ def normalize_path(path: Path, home: Path, expanduser: bool=True) -> Path:
         except ValueError:
             # Nếu không thể relative, giữ nguyên đường dẫn tuyệt đối
             return path
-    
-    norm_path = (Path('~') / path)
+    path = (Path('~') / path)
     if expanduser:
-        norm_path = norm_path.expanduser()
-    return norm_path
+        path = path.expanduser()
+    return path 

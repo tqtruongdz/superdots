@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import click
-from rich.console import Console
+from rich.console import _STD_STREAMS_OUTPUT, Console
 from rich.table import Table
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -47,7 +47,7 @@ def initialize_managers(repo_path: Path, remote_url: Optional[str] = None):
         sys.exit(1)
 
 
-def format_config_table(configs: List[ConfigFile]) -> Table:
+def format_config_table(configs: List[ConfigFile]) -> tuple[Table, int]:
     """Format configurations as a rich table."""
     table = Table(show_header=True, header_style="bold blue")
     table.add_column("Name", style="cyan", no_wrap=True)
@@ -55,7 +55,8 @@ def format_config_table(configs: List[ConfigFile]) -> Table:
     table.add_column("Status", style="yellow")
     table.add_column("Source Path", style="magenta")
     table.add_column("Platforms", style="blue")
-
+    
+    total = 0
     for config in configs:
         # Format status with color
         status_color = {
@@ -68,16 +69,20 @@ def format_config_table(configs: List[ConfigFile]) -> Table:
 
         status_text = f"[{status_color.get(config.status, 'white')}]{config.status.value}[/]"
         platforms_text = ", ".join([p.value for p in config.platforms])
-
+        source_path = config.source_paths.get(platform_detector.os_type) 
+        if not source_path:
+            continue
+        
+        total += 1
         table.add_row(
             config.name,
             config.config_type.value,
             status_text,
-            str(config.source_path),
+            str(source_path),
             platforms_text
         )
 
-    return table
+    return table, total
 
 
 def format_sync_result(result) -> None:
@@ -322,9 +327,9 @@ def list(ctx, platform: Optional[str], status: Optional[str], tags: tuple, outpu
         console.print(json.dumps(data, indent=2, default=str))
     else:
         # Table output
-        table = format_config_table(configs)
+        table, total = format_config_table(configs)
         console.print(table)
-        console.print(f"\n[dim]Total: {len(configs)} configurations[/dim]")
+        console.print(f"\n[dim]Total: {total} configurations[/dim]")
 
 
 # Status command

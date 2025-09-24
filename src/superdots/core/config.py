@@ -86,10 +86,10 @@ class ConfigFile:
         """Convert to dictionary for serialization."""
         data = asdict(self)
         # Convert Path objects to strings
-        data['source_paths'] = {os_type.value: str(path) for os_type, path in self.source_paths.items()}
-        data['repo_path'] = str(self.repo_path)
+        data['source_paths'] = {os_type.value: str(normalize_path(path, expanduser=False)) for os_type, path in self.source_paths.items()}
+        data['repo_path'] = str(normalize_path(self.repo_path, expanduser=False))
         if self.backup_path:
-            data['backup_path'] = str(self.backup_path)
+            data['backup_path'] = str(normalize_path(self.backup_path, expanduser=False))
 
         # Convert enums to values
         data['config_type'] = self.config_type.value
@@ -109,10 +109,10 @@ class ConfigFile:
     def from_dict(cls, data: Dict[str, Any]) -> 'ConfigFile':
         """Create instance from dictionary."""
         # Convert strings back to Path objects
-        data['source_paths'] = {OSType(os_type): Path(path) for os_type, path in data['source_paths'].items()}
-        data['repo_path'] = Path(data['repo_path'])
+        data['source_paths'] = {OSType(os_type): Path(path).expanduser() for os_type, path in data['source_paths'].items()}
+        data['repo_path'] = Path(data['repo_path']).expanduser()
         if data.get('backup_path'):
-            data['backup_path'] = Path(data['backup_path'])
+            data['backup_path'] = Path(data['backup_path']).expanduser()
 
         # Convert values back to enums
         data['config_type'] = ConfigType(data['config_type'])
@@ -308,7 +308,7 @@ class ConfigManager:
         """Generate repository path for a configuration."""
         # Use a common location for multi-platform configs
         common_dir = self.configs_dir / ('common' if len(platforms) > 1 else platforms[0].value)
-        
+
 
         # Create a safe filename based on the config name
         safe_name = name.replace('/', '_').replace('\\', '_')
@@ -380,12 +380,11 @@ class ConfigManager:
             # Generate repository path
             self.logger.debug(f"{source_paths}")
             repo_path = self._get_repo_path_for_config(name, config_type, platforms)
-            
-            source_paths_norm = {key: normalize_path(value, platform_detector.home_dir, False) for key, value in source_paths.items()}
+
             # Create configuration object
             config = ConfigFile(
                 name=name,
-                source_paths=source_paths_norm,
+                source_paths=source_paths,
                 repo_path=repo_path,
                 config_type=config_type,
                 platforms=platforms,
@@ -402,7 +401,7 @@ class ConfigManager:
             if current_path and current_path.exists():
                 backup_path = self._create_backup(current_path, name)
                 if backup_path:
-                    config.backup_path = normalize_path(backup_path, platform_detector.home_dir, False)
+                    config.backup_path = backup_path
 
             # Copy to repository (use current platform's file if available, otherwise first existing)
             source_for_repo = current_path if current_path and current_path.exists() else first_existing_path
